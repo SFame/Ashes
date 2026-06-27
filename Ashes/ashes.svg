@@ -1,0 +1,82 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2622"/>
+      <stop offset="1" stop-color="#16130f"/>
+    </linearGradient>
+    <!-- ember glow -->
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb347" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#ff7a18" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ff7a18" stop-opacity="0"/>
+    </radialGradient>
+    <!-- flame body -->
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ff5e13"/>
+      <stop offset="0.45" stop-color="#ff8a1e"/>
+      <stop offset="0.8" stop-color="#ffc04a"/>
+      <stop offset="1" stop-color="#ffe08a"/>
+    </linearGradient>
+    <linearGradient id="flameInner" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffd24a"/>
+      <stop offset="1" stop-color="#fff3c4"/>
+    </linearGradient>
+    <!-- ash particle gradient -->
+    <linearGradient id="ash" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#c9c2bb"/>
+      <stop offset="1" stop-color="#6e6862"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded background -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bg)"/>
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="none" stroke="#3a342e" stroke-width="3"/>
+
+  <!-- warm glow behind the ember -->
+  <circle cx="256" cy="338" r="150" fill="url(#glow)"/>
+
+  <!-- flame / ember at the base -->
+  <g>
+    <!-- outer flame -->
+    <path d="M256 392
+             C212 392 182 360 182 320
+             C182 286 206 268 220 240
+             C228 256 236 262 244 266
+             C238 232 252 204 286 178
+             C280 214 300 226 312 252
+             C326 278 330 298 330 320
+             C330 360 300 392 256 392 Z"
+          fill="url(#flame)"/>
+    <!-- inner flame -->
+    <path d="M256 380
+             C228 380 210 358 210 332
+             C210 308 226 296 238 276
+             C244 292 252 296 260 298
+             C254 270 266 252 286 232
+             C284 258 296 268 302 286
+             C310 304 304 322 300 334
+             C292 362 282 380 256 380 Z"
+          fill="url(#flameInner)" opacity="0.85"/>
+  </g>
+
+  <!-- rising ash / sparks: smaller and fainter as they go up -->
+  <g>
+    <circle cx="244" cy="150" r="9"  fill="url(#ash)" opacity="0.95"/>
+    <circle cx="300" cy="128" r="7"  fill="url(#ash)" opacity="0.85"/>
+    <circle cx="206" cy="120" r="6"  fill="url(#ash)" opacity="0.8"/>
+    <circle cx="276" cy="96"  r="6"  fill="url(#ash)" opacity="0.7"/>
+    <circle cx="232" cy="80"  r="5"  fill="url(#ash)" opacity="0.6"/>
+    <circle cx="318" cy="86"  r="4.5" fill="url(#ash)" opacity="0.55"/>
+    <circle cx="190" cy="78"  r="4"  fill="url(#ash)" opacity="0.5"/>
+    <circle cx="296" cy="62"  r="4"  fill="url(#ash)" opacity="0.42"/>
+    <circle cx="252" cy="56"  r="3.5" fill="url(#ash)" opacity="0.38"/>
+    <circle cx="222" cy="44"  r="3"  fill="url(#ash)" opacity="0.3"/>
+    <circle cx="286" cy="40"  r="2.6" fill="url(#ash)" opacity="0.26"/>
+
+    <!-- a couple of glowing sparks among the ash -->
+    <circle cx="262" cy="138" r="4.5" fill="#ffcf6b" opacity="0.95"/>
+    <circle cx="226" cy="100" r="3.2" fill="#ffb347" opacity="0.8"/>
+    <circle cx="306" cy="104" r="3"   fill="#ffb347" opacity="0.7"/>
+  </g>
+</svg>

@@ -26,11 +26,13 @@ namespace Ashes
         private System.Windows.Forms.Button btnRun;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Button btnWipe;
+        private System.Windows.Forms.Button btnCleanup;
         private System.Windows.Forms.TextBox txtLog;
         private System.Windows.Forms.Label lblHint;
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             lstTargets = new System.Windows.Forms.ListBox();
             btnAdd = new System.Windows.Forms.Button();
             btnRemove = new System.Windows.Forms.Button();
@@ -42,6 +44,7 @@ namespace Ashes
             btnRun = new System.Windows.Forms.Button();
             btnCancel = new System.Windows.Forms.Button();
             btnWipe = new System.Windows.Forms.Button();
+            btnCleanup = new System.Windows.Forms.Button();
             txtLog = new System.Windows.Forms.TextBox();
             lblHint = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)numPasses).BeginInit();
@@ -53,18 +56,20 @@ namespace Ashes
             lstTargets.FormattingEnabled = true;
             lstTargets.HorizontalScrollbar = true;
             lstTargets.IntegralHeight = false;
-            lstTargets.Location = new System.Drawing.Point(12, 31);
+            lstTargets.Location = new System.Drawing.Point(17, 52);
+            lstTargets.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             lstTargets.Name = "lstTargets";
             lstTargets.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            lstTargets.Size = new System.Drawing.Size(560, 170);
+            lstTargets.Size = new System.Drawing.Size(798, 281);
             lstTargets.TabIndex = 1;
             // 
             // btnAdd
             // 
             btnAdd.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnAdd.Location = new System.Drawing.Point(578, 31);
+            btnAdd.Location = new System.Drawing.Point(826, 52);
+            btnAdd.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnAdd.Name = "btnAdd";
-            btnAdd.Size = new System.Drawing.Size(110, 28);
+            btnAdd.Size = new System.Drawing.Size(157, 47);
             btnAdd.TabIndex = 2;
             btnAdd.Text = "추가...";
             btnAdd.UseVisualStyleBackColor = true;
@@ -72,9 +77,10 @@ namespace Ashes
             // btnRemove
             // 
             btnRemove.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnRemove.Location = new System.Drawing.Point(578, 65);
+            btnRemove.Location = new System.Drawing.Point(826, 108);
+            btnRemove.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnRemove.Name = "btnRemove";
-            btnRemove.Size = new System.Drawing.Size(110, 28);
+            btnRemove.Size = new System.Drawing.Size(157, 47);
             btnRemove.TabIndex = 3;
             btnRemove.Text = "선택 제거";
             btnRemove.UseVisualStyleBackColor = true;
@@ -82,9 +88,10 @@ namespace Ashes
             // btnClear
             // 
             btnClear.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            btnClear.Location = new System.Drawing.Point(578, 99);
+            btnClear.Location = new System.Drawing.Point(826, 165);
+            btnClear.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnClear.Name = "btnClear";
-            btnClear.Size = new System.Drawing.Size(110, 28);
+            btnClear.Size = new System.Drawing.Size(157, 47);
             btnClear.TabIndex = 4;
             btnClear.Text = "전체 비우기";
             btnClear.UseVisualStyleBackColor = true;
@@ -93,9 +100,10 @@ namespace Ashes
             // 
             chkReadOnly.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
             chkReadOnly.AutoSize = true;
-            chkReadOnly.Location = new System.Drawing.Point(12, 215);
+            chkReadOnly.Location = new System.Drawing.Point(17, 361);
+            chkReadOnly.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             chkReadOnly.Name = "chkReadOnly";
-            chkReadOnly.Size = new System.Drawing.Size(155, 19);
+            chkReadOnly.Size = new System.Drawing.Size(229, 29);
             chkReadOnly.TabIndex = 6;
             chkReadOnly.Text = "읽기 전용 속성 제거 (-r)";
             chkReadOnly.UseVisualStyleBackColor = true;
@@ -106,9 +114,10 @@ namespace Ashes
             chkRecurse.AutoSize = true;
             chkRecurse.Checked = true;
             chkRecurse.CheckState = System.Windows.Forms.CheckState.Checked;
-            chkRecurse.Location = new System.Drawing.Point(200, 215);
+            chkRecurse.Location = new System.Drawing.Point(286, 361);
+            chkRecurse.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             chkRecurse.Name = "chkRecurse";
-            chkRecurse.Size = new System.Drawing.Size(128, 19);
+            chkRecurse.Size = new System.Drawing.Size(189, 29);
             chkRecurse.TabIndex = 7;
             chkRecurse.Text = "하위 폴더 재귀 (-s)";
             chkRecurse.UseVisualStyleBackColor = true;
@@ -117,28 +126,31 @@ namespace Ashes
             // 
             lblPasses.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
             lblPasses.AutoSize = true;
-            lblPasses.Location = new System.Drawing.Point(390, 216);
+            lblPasses.Location = new System.Drawing.Point(557, 360);
+            lblPasses.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lblPasses.Name = "lblPasses";
-            lblPasses.Size = new System.Drawing.Size(107, 15);
+            lblPasses.Size = new System.Drawing.Size(160, 25);
             lblPasses.TabIndex = 8;
             lblPasses.Text = "덮어쓰기 횟수 (-p)";
             // 
             // numPasses
             // 
             numPasses.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
-            numPasses.Location = new System.Drawing.Point(508, 213);
+            numPasses.Location = new System.Drawing.Point(726, 355);
+            numPasses.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             numPasses.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numPasses.Name = "numPasses";
-            numPasses.Size = new System.Drawing.Size(64, 23);
+            numPasses.Size = new System.Drawing.Size(91, 31);
             numPasses.TabIndex = 9;
             numPasses.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // btnRun
             // 
             btnRun.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            btnRun.Location = new System.Drawing.Point(578, 209);
+            btnRun.Location = new System.Drawing.Point(826, 348);
+            btnRun.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnRun.Name = "btnRun";
-            btnRun.Size = new System.Drawing.Size(110, 30);
+            btnRun.Size = new System.Drawing.Size(157, 50);
             btnRun.TabIndex = 10;
             btnRun.Text = "안전 삭제 실행";
             btnRun.UseVisualStyleBackColor = true;
@@ -147,9 +159,10 @@ namespace Ashes
             // 
             btnCancel.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
             btnCancel.Enabled = false;
-            btnCancel.Location = new System.Drawing.Point(578, 245);
+            btnCancel.Location = new System.Drawing.Point(826, 408);
+            btnCancel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnCancel.Name = "btnCancel";
-            btnCancel.Size = new System.Drawing.Size(110, 26);
+            btnCancel.Size = new System.Drawing.Size(157, 43);
             btnCancel.TabIndex = 11;
             btnCancel.Text = "중지";
             btnCancel.UseVisualStyleBackColor = true;
@@ -157,12 +170,24 @@ namespace Ashes
             // btnWipe
             // 
             btnWipe.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
-            btnWipe.Location = new System.Drawing.Point(12, 245);
+            btnWipe.Location = new System.Drawing.Point(17, 408);
+            btnWipe.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnWipe.Name = "btnWipe";
-            btnWipe.Size = new System.Drawing.Size(170, 26);
+            btnWipe.Size = new System.Drawing.Size(229, 43);
             btnWipe.TabIndex = 12;
             btnWipe.Text = "드라이브 빈 공간 정리...";
             btnWipe.UseVisualStyleBackColor = true;
+            // 
+            // btnCleanup
+            // 
+            btnCleanup.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
+            btnCleanup.Location = new System.Drawing.Point(254, 408);
+            btnCleanup.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btnCleanup.Name = "btnCleanup";
+            btnCleanup.Size = new System.Drawing.Size(257, 43);
+            btnCleanup.TabIndex = 13;
+            btnCleanup.Text = "외장 드라이브 흔적 정리...";
+            btnCleanup.UseVisualStyleBackColor = true;
             // 
             // txtLog
             // 
@@ -170,12 +195,13 @@ namespace Ashes
             txtLog.BackColor = System.Drawing.Color.FromArgb(30, 30, 30);
             txtLog.Font = new System.Drawing.Font("Consolas", 9F);
             txtLog.ForeColor = System.Drawing.Color.Gainsboro;
-            txtLog.Location = new System.Drawing.Point(12, 285);
+            txtLog.Location = new System.Drawing.Point(17, 475);
+            txtLog.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             txtLog.Multiline = true;
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            txtLog.Size = new System.Drawing.Size(676, 165);
+            txtLog.Size = new System.Drawing.Size(964, 272);
             txtLog.TabIndex = 13;
             txtLog.WordWrap = false;
             // 
@@ -183,20 +209,22 @@ namespace Ashes
             // 
             lblHint.AutoSize = true;
             lblHint.ForeColor = System.Drawing.SystemColors.GrayText;
-            lblHint.Location = new System.Drawing.Point(12, 9);
+            lblHint.Location = new System.Drawing.Point(17, 15);
+            lblHint.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lblHint.Name = "lblHint";
-            lblHint.Size = new System.Drawing.Size(343, 15);
+            lblHint.Size = new System.Drawing.Size(513, 25);
             lblHint.TabIndex = 0;
             lblHint.Text = "삭제할 파일/폴더를 추가하세요. (복구 불가능하게 삭제됩니다)";
             // 
             // MainForm
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(700, 462);
+            ClientSize = new System.Drawing.Size(1000, 770);
             Controls.Add(lblHint);
             Controls.Add(txtLog);
             Controls.Add(btnWipe);
+            Controls.Add(btnCleanup);
             Controls.Add(btnCancel);
             Controls.Add(btnRun);
             Controls.Add(numPasses);
@@ -207,7 +235,9 @@ namespace Ashes
             Controls.Add(btnRemove);
             Controls.Add(btnAdd);
             Controls.Add(lstTargets);
-            MinimumSize = new System.Drawing.Size(620, 440);
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            MinimumSize = new System.Drawing.Size(876, 696);
             Name = "MainForm";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "Ashes";

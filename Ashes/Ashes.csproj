@@ -1,24 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <Nullable>disable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <RootNamespace>Ashes</RootNamespace>
-    <AssemblyName>Ashes</AssemblyName>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<Nullable>disable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ApplicationIcon>Ashes.ico</ApplicationIcon>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<RootNamespace>Ashes</RootNamespace>
+		<AssemblyName>Ashes</AssemblyName>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+	</PropertyGroup>
 
-  <!-- Bundle the SDelete executables. Drop sdelete.exe / sdelete64.exe /
+	<!-- Bundle the SDelete executables. Drop sdelete.exe / sdelete64.exe /
        sdelete64a.exe into a "sdelete" folder next to this .csproj and they
        will be copied to the build output. -->
-  <ItemGroup>
-    <None Include="sdelete\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>sdelete\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="sdelete\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>sdelete\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
+
+	<!-- Bundle the DriveCleanup executables (Uwe Sieber freeware). Drop
+       DriveCleanup32.exe / DriveCleanup64.exe into a "drive_cleanup" folder next
+       to this .csproj. License permits redistribution; do not modify the files. -->
+	<ItemGroup>
+		<None Include="drive_cleanup\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>drive_cleanup\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
 
 </Project>

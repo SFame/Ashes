@@ -22,6 +22,7 @@ namespace Ashes
             this.btnRun.Click += BtnRun_Click;
             this.btnCancel.Click += BtnCancel_Click;
             this.btnWipe.Click += BtnWipe_Click;
+            this.btnCleanup.Click += BtnCleanup_Click;
 
             this.lstTargets.KeyDown += LstTargets_KeyDown;
 
@@ -223,6 +224,23 @@ namespace Ashes
         {
             using var wipe = new WipeForm();
             wipe.ShowDialog(this);
+        }
+
+        // ---------- external drive trace cleanup window ----------
+
+        private void BtnCleanup_Click(object sender, EventArgs e)
+        {
+            if (!DriveCleanupRunner.IsArchitectureSupported)
+            {
+                MessageBox.Show(this,
+                    "이 기능은 현재 시스템 아키텍처(ARM)에서 지원되지 않습니다.\n" +
+                    "DriveCleanup은 x86/x64 빌드만 제공됩니다.",
+                    "Ashes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using var cleanup = new DriveCleanupForm();
+            cleanup.ShowDialog(this);
         }
 
         // ---------- logging ----------
