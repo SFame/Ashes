@@ -1,0 +1,29 @@
+Windows Registry Editor Version 5.00
+
+; =====================================================================
+; Ashes 우클릭 컨텍스트 메뉴 등록
+; ---------------------------------------------------------------------
+; 사용 전 반드시 경로를 수정하세요.
+; 아래의 C:\\Program Files\\Ashes\\Ashes.exe 를 실제 Ashes.exe 위치로
+; 바꿔야 합니다. 경로 구분자는 역슬래시 두 개(\\)로 적습니다.
+;   예) D:\\Tools\\Ashes\\Ashes.exe  →  D:\\\\Tools... 가 아니라 D:\\Tools\\Ashes\\Ashes.exe
+;
+; 관리자 권한으로 실행해야 합니다 (HKEY_CLASSES_ROOT 전역 등록).
+; 등록 후 모든 파일과 폴더의 우클릭 메뉴에 "Ashes로 안전 삭제"가 추가됩니다.
+; =====================================================================
+
+; ---- 모든 파일 우클릭 ----
+[HKEY_CLASSES_ROOT\*\shell\Ashes]
+@="Securely delete with Ashes"
+"Icon"="C:\\Program Files\\Ashes\\Ashes.exe"
+
+[HKEY_CLASSES_ROOT\*\shell\Ashes\command]
+@="\"C:\\Program Files\\Ashes\\Ashes.exe\" \"%1\""
+
+; ---- 폴더 우클릭 ----
+[HKEY_CLASSES_ROOT\Directory\shell\Ashes]
+@="Securely delete with Ashes"
+"Icon"="C:\\Program Files\\Ashes\\Ashes.exe"
+
+[HKEY_CLASSES_ROOT\Directory\shell\Ashes\command]
+@="\"C:\\Program Files\\Ashes\\Ashes.exe\" \"%1\""

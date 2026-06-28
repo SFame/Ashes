@@ -150,7 +150,7 @@ namespace Ashes
             {
                 if (e.Data != null) onOutput?.Invoke(e.Data);
             };
-
+            
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();

@@ -20,6 +20,11 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>sdelete\%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</None>
+		<None Include="reg\*.reg">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>reg\%(Filename)%(Extension)</Link>
+			<TargetPath>%(Filename)%(Extension)</TargetPath>
+		</None>
 	</ItemGroup>
 
 	<!-- Bundle the DriveCleanup executables (Uwe Sieber freeware). Drop

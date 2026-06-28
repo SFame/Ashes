@@ -12,7 +12,7 @@ namespace Ashes
         {
             InitializeComponent();
 
-            btnScan.Click += async (s, e) => await RunAsync(testMode: true);
+            btnScan.Click += async (s, e) => await RunAsync(testMode: true).ConfigureAwait(false);
             btnClean.Click += BtnClean_Click;
             btnCancel.Click += (s, e) => _cts?.Cancel();
 
@@ -144,12 +144,11 @@ namespace Ashes
             _cts = new CancellationTokenSource();
             try
             {
-                int code = await DriveCleanupRunner.RunAsync(args, OnOutput, _cts.Token);
-                // DriveCleanup's exit code is the count of (removable) devices.
-                if (testMode)
-                    AppendLog($"[미리보기 완료] 제거 대상 장치 수: {code}");
-                else
-                    AppendLog($"[완료] 제거된 장치 수: {code}");
+                await DriveCleanupRunner.RunAsync(args, OnOutput, _cts.Token);
+                // DriveCleanup prints its own per-type "N ... to remove" summary,
+                // so we just mark completion. (Its exit code isn't a reliable
+                // device count — in test mode it's 0 even when items are listed.)
+                AppendLog(testMode ? "[미리보기 완료]" : "[완료]");
             }
             catch (OperationCanceledException)
             {
