@@ -20,8 +20,9 @@ namespace Ashes
     internal static class ConsoleMode
     {
         // ---- fixed options for context-menu / CLI runs ----
-        private const int Passes = 3;      // -p 3
-        private const bool Recurse = true; // -s (always on for directories)
+        private const int Passes = 3;        // -p 3
+        private const bool Recurse = true;   // -s (always on for directories)
+        private const bool RemoveReadOnly = true; // -r (always strip read-only/system/hidden so locked files like BitLocker recovery keys can be deleted)
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool AttachConsole(int dwProcessId);
@@ -144,6 +145,7 @@ namespace Ashes
         private static string BuildArgs(List<string> targets)
         {
             var parts = new List<string> { "-accepteula", "-nobanner", "-p", Passes.ToString() };
+            if (RemoveReadOnly) parts.Add("-r");
             if (Recurse) parts.Add("-s");
             foreach (var t in targets)
                 parts.Add(SDeleteRunner.Quote(t));
