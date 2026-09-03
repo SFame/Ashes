@@ -38,6 +38,9 @@ namespace Ashes
         private System.Windows.Forms.CheckBox chkExtMountPts;
         private System.Windows.Forms.CheckBox chkExtRegUsb;
         private System.Windows.Forms.CheckBox chkExtAmcache;
+        private System.Windows.Forms.CheckBox chkExtJumpList;
+        private System.Windows.Forms.CheckBox chkExtPrefetch;
+        private System.Windows.Forms.CheckBox chkExtShellbags;
         private System.Windows.Forms.Button btnExtScan;
         private System.Windows.Forms.Button btnExtRun;
         private System.Windows.Forms.Button btnAudit;
@@ -67,6 +70,9 @@ namespace Ashes
             chkExtMountPts = new System.Windows.Forms.CheckBox();
             chkExtRegUsb = new System.Windows.Forms.CheckBox();
             chkExtAmcache = new System.Windows.Forms.CheckBox();
+            chkExtJumpList = new System.Windows.Forms.CheckBox();
+            chkExtPrefetch = new System.Windows.Forms.CheckBox();
+            chkExtShellbags = new System.Windows.Forms.CheckBox();
             btnExtScan = new System.Windows.Forms.Button();
             btnExtRun = new System.Windows.Forms.Button();
             btnAudit = new System.Windows.Forms.Button();
@@ -232,13 +238,16 @@ namespace Ashes
             grpExt.Controls.Add(chkExtMountPts);
             grpExt.Controls.Add(chkExtRegUsb);
             grpExt.Controls.Add(chkExtAmcache);
+            grpExt.Controls.Add(chkExtJumpList);
+            grpExt.Controls.Add(chkExtPrefetch);
+            grpExt.Controls.Add(chkExtShellbags);
             grpExt.Controls.Add(btnExtScan);
             grpExt.Controls.Add(btnExtRun);
             grpExt.Location = new System.Drawing.Point(17, 370);
             grpExt.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             grpExt.Name = "grpExt";
             grpExt.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            grpExt.Size = new System.Drawing.Size(629, 345);
+            grpExt.Size = new System.Drawing.Size(629, 465);
             grpExt.TabIndex = 7;
             grpExt.TabStop = false;
             grpExt.Text = "확장 정리 (DriveCleanup 미커버 영역)";
@@ -327,27 +336,63 @@ namespace Ashes
             chkExtAmcache.Text = "Amcache 저장장치 기록 (InventoryDevice*)";
             chkExtAmcache.UseVisualStyleBackColor = true;
             //
+            // chkExtJumpList
+            //
+            chkExtJumpList.AutoSize = true;
+            chkExtJumpList.Checked = true;
+            chkExtJumpList.CheckState = System.Windows.Forms.CheckState.Checked;
+            chkExtJumpList.Location = new System.Drawing.Point(21, 285);
+            chkExtJumpList.Name = "chkExtJumpList";
+            chkExtJumpList.Size = new System.Drawing.Size(400, 29);
+            chkExtJumpList.TabIndex = 7;
+            chkExtJumpList.Text = "점프리스트 외장 볼륨 참조 파일 (AutomaticDestinations)";
+            chkExtJumpList.UseVisualStyleBackColor = true;
+            //
+            // chkExtPrefetch
+            //
+            chkExtPrefetch.AutoSize = true;
+            chkExtPrefetch.Checked = true;
+            chkExtPrefetch.CheckState = System.Windows.Forms.CheckState.Checked;
+            chkExtPrefetch.Location = new System.Drawing.Point(21, 320);
+            chkExtPrefetch.Name = "chkExtPrefetch";
+            chkExtPrefetch.Size = new System.Drawing.Size(400, 29);
+            chkExtPrefetch.TabIndex = 8;
+            chkExtPrefetch.Text = "Prefetch 전체 삭제 (외장 참조 + 삭제도구 실행 흔적)";
+            chkExtPrefetch.UseVisualStyleBackColor = true;
+            //
+            // chkExtShellbags
+            //
+            chkExtShellbags.AutoSize = true;
+            chkExtShellbags.Checked = true;
+            chkExtShellbags.CheckState = System.Windows.Forms.CheckState.Checked;
+            chkExtShellbags.Location = new System.Drawing.Point(21, 355);
+            chkExtShellbags.Name = "chkExtShellbags";
+            chkExtShellbags.Size = new System.Drawing.Size(400, 29);
+            chkExtShellbags.TabIndex = 9;
+            chkExtShellbags.Text = "Shellbags 외장 드라이브 컨테이너 초기화 (E:/F: 폴더 트리)";
+            chkExtShellbags.UseVisualStyleBackColor = true;
+            //
             // btnExtScan
             //
-            btnExtScan.Location = new System.Drawing.Point(21, 290);
+            btnExtScan.Location = new System.Drawing.Point(21, 395);
             btnExtScan.Name = "btnExtScan";
             btnExtScan.Size = new System.Drawing.Size(180, 40);
-            btnExtScan.TabIndex = 7;
+            btnExtScan.TabIndex = 8;
             btnExtScan.Text = "확장 미리보기";
             btnExtScan.UseVisualStyleBackColor = true;
             //
             // btnExtRun
             //
-            btnExtRun.Location = new System.Drawing.Point(220, 290);
+            btnExtRun.Location = new System.Drawing.Point(220, 395);
             btnExtRun.Name = "btnExtRun";
             btnExtRun.Size = new System.Drawing.Size(180, 40);
-            btnExtRun.TabIndex = 8;
+            btnExtRun.TabIndex = 9;
             btnExtRun.Text = "확장 정리 실행";
             btnExtRun.UseVisualStyleBackColor = true;
             //
             // btnAudit
             //
-            btnAudit.Location = new System.Drawing.Point(17, 725);
+            btnAudit.Location = new System.Drawing.Point(17, 845);
             btnAudit.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             btnAudit.Name = "btnAudit";
             btnAudit.Size = new System.Drawing.Size(629, 45);
@@ -361,7 +406,7 @@ namespace Ashes
             txtLog.BackColor = System.Drawing.Color.FromArgb(30, 30, 30);
             txtLog.Font = new System.Drawing.Font("Consolas", 9F);
             txtLog.ForeColor = System.Drawing.Color.Gainsboro;
-            txtLog.Location = new System.Drawing.Point(17, 790);
+            txtLog.Location = new System.Drawing.Point(17, 910);
             txtLog.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             txtLog.Multiline = true;
             txtLog.Name = "txtLog";
@@ -375,7 +420,7 @@ namespace Ashes
             //
             AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(691, 1080);
+            ClientSize = new System.Drawing.Size(691, 1200);
             Controls.Add(txtLog);
             Controls.Add(grpExt);
             Controls.Add(btnAudit);
@@ -387,7 +432,7 @@ namespace Ashes
             Controls.Add(lblIntro);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            MinimumSize = new System.Drawing.Size(700, 1110);
+            MinimumSize = new System.Drawing.Size(700, 1230);
             Name = "DriveCleanupForm";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             Text = "외장 드라이브 흔적 정리";

@@ -74,6 +74,37 @@ static class Markers
 
 static class Native
 {
+    // ── Prefetch MAM(XPRESS Huffman) 압축 해제 ──
+    [DllImport("ntdll.dll")]
+    public static extern int RtlGetCompressionWorkSpaceSize(
+        ushort formatAndEngine, ref uint bufferWorkSpaceSize, ref uint fragmentWorkSpaceSize);
+
+    [DllImport("ntdll.dll")]
+    public static extern int RtlDecompressBufferEx(
+        ushort formatAndEngine,
+        byte[] uncompressedBuffer, uint uncompressedBufferSize,
+        byte[] compressedBuffer, uint compressedBufferSize,
+        ref uint finalUncompressedSize, byte[] workSpace);
+
+    // ── 볼륨 시리얼 조회 (내장 볼륨 식별용) ──
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern bool GetVolumeInformation(
+        string rootPathName, System.Text.StringBuilder volumeNameBuffer, int volumeNameSize,
+        out uint volumeSerialNumber, out uint maximumComponentLength, out uint fileSystemFlags,
+        System.Text.StringBuilder fileSystemNameBuffer, int fileSystemNameSize);
+
+    public static string GetVolumeSerial(string root)
+    {
+        try
+        {
+            if (!root.EndsWith("\\")) root += "\\";
+            if (GetVolumeInformation(root, null, 0, out uint serial, out _, out _, null, 0))
+                return $"{(serial >> 16):X4}-{(serial & 0xFFFF):X4}";
+        }
+        catch { }
+        return null;
+    }
+
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
     static extern int RegQueryInfoKey(
         SafeRegistryHandle hKey, IntPtr lpClass, IntPtr lpcchClass, IntPtr lpReserved,
@@ -651,6 +682,338 @@ sealed class Auditor
         }
     }
 
+    // ═══════════════ 7b. 점프리스트 (AutomaticDestinations / CustomDestinations) ═══════════════
+    // 포렌식 조사가 외장 볼륨 증거를 실제로 찾아낸 핵심 위치. 파일 내부의 LNK
+    // 스트림을 CLSID 로 카빙해, 외장 볼륨(REMOVABLE 또는 시스템 드라이브 외)을
+    // 참조하는 스트림에서 볼륨 시리얼/레이블/경로를 추출한다.
+
+    static readonly byte[] LnkClsidSig =
+    {
+        0x4C,0x00,0x00,0x00,0x01,0x14,0x02,0x00,0x00,0x00,0x00,0x00,
+        0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46
+    };
+
+    public void ScanJumpLists()
+    {
+        string usersDir = Path.Combine(_sysDrive + "\\", "Users");
+        if (!Directory.Exists(usersDir)) return;
+        var ansi = ProcUtil.AnsiEncoding;
+
+        foreach (var userDir in Directory.EnumerateDirectories(usersDir))
+        {
+            string user = Path.GetFileName(userDir);
+            foreach (var (sub, pattern) in new[]
+            {
+                ("AutomaticDestinations", "*.automaticDestinations-ms"),
+                ("CustomDestinations", "*.customDestinations-ms"),
+            })
+            {
+                string dir = Path.Combine(userDir, @"AppData\Roaming\Microsoft\Windows\Recent", sub);
+                if (!Directory.Exists(dir)) continue;
+                IEnumerable<string> files;
+                try { files = Directory.EnumerateFiles(dir, pattern); } catch { continue; }
+
+                foreach (var f in files)
+                {
+                    byte[] data;
+                    try { data = File.ReadAllBytes(f); } catch { continue; }
+
+                    int streamNo = 0;
+                    int off = 0;
+                    while (true)
+                    {
+                        int idx = IndexOf(data, LnkClsidSig, off);
+                        if (idx < 0) break;
+                        off = idx + 4;
+                        streamNo++;
+
+                        var info = LnkParser.ParseAt(data, idx, ansi);
+                        if (info == null) continue;
+                        bool external = info.DriveType == 2
+                            || (info.DriveType == 3 && info.LocalBasePath.Length >= 2
+                                && !info.LocalBasePath.StartsWith(_sysDrive, StringComparison.OrdinalIgnoreCase));
+                        if (!external) continue;
+
+                        string typeName = info.DriveType switch { 2 => "이동식", 3 => "고정(시스템 외)", 5 => "CD-ROM", _ => info.DriveType.ToString() };
+                        Add("JumpList", $"{sub} [{user}]", f, Path.GetFileName(f),
+                            $"Stream#{streamNo}; DriveType={typeName}; Serial={info.Serial:X8}; Label={info.Label}; Path={info.LocalBasePath}",
+                            File.GetLastWriteTime(f));
+                    }
+                }
+            }
+        }
+    }
+
+    static int IndexOf(byte[] hay, byte[] needle, int start)
+    {
+        int last = hay.Length - needle.Length;
+        for (int i = Math.Max(0, start); i <= last; i++)
+        {
+            int j = 0;
+            while (j < needle.Length && hay[i + j] == needle[j]) j++;
+            if (j == needle.Length) return i;
+        }
+        return -1;
+    }
+
+    // ═══════════════ 7c. Shellbags (UsrClass + NTUSER BagMRU) ═══════════════
+    // 폴더 보기 설정. 외장 드라이브 노드(E:, F: 등)가 남는다. 볼륨 시리얼은
+    // 대개 없지만 "어떤 드라이브 문자를 열었는가" 는 드러난다.
+
+    public void ScanShellbags(RegistryKey userRoot, string userLabel, string source)
+    {
+        // UsrClass 측: Software\Classes\Local Settings\...\Shell\BagMRU
+        WalkBagMru(userRoot, @"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU",
+                   userLabel, source, "UsrClass");
+        // NTUSER 측: Software\Microsoft\Windows\Shell\BagMRU
+        WalkBagMru(userRoot, @"Software\Microsoft\Windows\Shell\BagMRU",
+                   userLabel, source, "NTUSER");
+    }
+
+    void WalkBagMru(RegistryKey root, string path, string userLabel, string source, string hive)
+    {
+        using var key = Reg.Open(root, path);
+        if (key == null) return;
+        Walk(key, path, 0);
+
+        void Walk(RegistryKey k, string keyPath, int depth)
+        {
+            if (depth > 12) return;
+            foreach (var valName in SafeValueNames(k))
+            {
+                if (!int.TryParse(valName, out _)) continue;
+                if (k.GetValue(valName) is not byte[] b) continue;
+                // shell item 에서 드라이브 문자 추출 (type 0x2x = volume)
+                if (b.Length >= 3 && (b[2] & 0x70) == 0x20)
+                {
+                    string txt = Encoding.Latin1.GetString(b, 3, Math.Min(23, b.Length - 3));
+                    int z = txt.IndexOf('\0'); if (z >= 0) txt = txt[..z];
+                    if (txt.Length >= 2 && txt[1] == ':')
+                    {
+                        string drv = txt[..Math.Min(3, txt.Length)].ToUpperInvariant();
+                        string sysd = _sysDrive.ToUpperInvariant();
+                        // 시스템 드라이브(C:) 와 데이터 D: 는 제외하고 외장 후보만
+                        if (!drv.StartsWith(sysd) && !drv.StartsWith("D:"))
+                            Add(source, $"Shellbag[{hive}] [{userLabel}]", keyPath, drv,
+                                $"드라이브 노드={drv}", Native.LastWrite(k));
+                    }
+                }
+            }
+            foreach (var sub in Reg.SubKeys(k))
+            {
+                using var sk = Reg.Open(k, sub);
+                if (sk != null) Walk(sk, keyPath + "\\" + sub, depth + 1);
+            }
+        }
+    }
+
+    static IEnumerable<string> SafeValueNames(RegistryKey k)
+    {
+        try { return k.GetValueNames(); } catch { return Array.Empty<string>(); }
+    }
+
+    // ═══════════════ 7d. MRU 계열 ═══════════════
+    // ComDlg32 열기/저장 대화상자, TypedPaths, WordWheelQuery 등에서 외장 경로 흔적.
+
+    public void ScanMru(RegistryKey userRoot, string userLabel, string source)
+    {
+        // 값 데이터(PIDL/문자열)에 드라이브 문자가 들어있는지 훑는다.
+        string[] keys =
+        {
+            @"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU",
+            @"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU",
+            @"Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths",
+            @"Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery",
+            @"Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU",
+        };
+        foreach (var path in keys)
+        {
+            using var key = Reg.Open(userRoot, path);
+            if (key == null) continue;
+            ScanMruKey(key, path, userLabel, source, 0);
+        }
+    }
+
+    void ScanMruKey(RegistryKey key, string path, string userLabel, string source, int depth)
+    {
+        if (depth > 4) return;
+        string sysd = _sysDrive.ToUpperInvariant();
+        foreach (var valName in SafeValueNames(key))
+        {
+            object v; try { v = key.GetValue(valName); } catch { continue; }
+            string text = v switch
+            {
+                string s => s,
+                byte[] b => ExtractPaths(b),
+                _ => ""
+            };
+            if (string.IsNullOrEmpty(text)) continue;
+            // 시스템/데이터 외 드라이브 문자 참조만
+            foreach (Match m in Regex.Matches(text, @"([D-Zd-z]):\\"))
+            {
+                string drv = (m.Groups[1].Value + ":").ToUpperInvariant();
+                if (drv.StartsWith(sysd) || drv == "D:") continue;
+                Add(source, $"MRU [{userLabel}]", path, valName,
+                    $"경로 참조={m.Value}…", Native.LastWrite(key));
+                break;
+            }
+        }
+        foreach (var sub in Reg.SubKeys(key))
+        {
+            using var sk = Reg.Open(key, sub);
+            if (sk != null) ScanMruKey(sk, path + "\\" + sub, userLabel, source, depth + 1);
+        }
+    }
+
+    // 바이너리 PIDL 등에서 UTF-16/ANSI 경로 문자열을 뽑아 이어붙인다.
+    static string ExtractPaths(byte[] b)
+    {
+        var sb = new StringBuilder();
+        // UTF-16LE 경로 후보
+        try
+        {
+            string u = Encoding.Unicode.GetString(b);
+            foreach (Match m in Regex.Matches(u, @"[A-Za-z]:\\[^\x00]{0,120}"))
+                sb.Append(m.Value).Append(' ');
+        }
+        catch { }
+        // ANSI 경로 후보
+        try
+        {
+            string a = Encoding.Latin1.GetString(b);
+            foreach (Match m in Regex.Matches(a, @"[A-Za-z]:\\[ -~]{0,120}"))
+                sb.Append(m.Value).Append(' ');
+        }
+        catch { }
+        return sb.ToString();
+    }
+
+    public void ScanActivityForLiveUsers(string source)
+    {
+        using var hku = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64);
+        foreach (var sid in Reg.SubKeys(hku))
+        {
+            if (!sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase)) continue;
+            if (sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase)) continue;
+            using var uk = Reg.Open(hku, sid);
+            if (uk == null) continue;
+            ScanShellbags(uk, sid, source);
+            ScanMru(uk, sid, source);
+            // UsrClass 는 별도 하이브(HKU\<sid>_Classes)로 로드돼 있기도 하다.
+            using var classes = Reg.Open(hku, sid + "_Classes");
+            if (classes != null)
+                WalkBagMru(classes, @"Local Settings\Software\Microsoft\Windows\Shell\BagMRU",
+                           sid, source, "UsrClass");
+        }
+    }
+
+    // ═══════════════ 7e. Prefetch ═══════════════
+    // 조사가 우리를 특정한 결정적 위치. .pf 는 MAM(XPRESS Huffman) 압축이라
+    // ntdll RtlDecompressBufferEx 로 해제한 뒤, 내부의 \VOLUME{...-시리얼}\경로
+    // 문자열에서 외장 볼륨 참조를 찾는다. 또한 파일명이 삭제/암호화 도구면
+    // (DriveCleanup/sdelete/wevtutil…) 그 실행 흔적도 보고한다.
+
+    static readonly Regex PrefetchInterest = new(
+        @"DRIVECLEANUP|USBDEVIEW|USBOBLIVION|SDELETE|CIPHER|WEVTUTIL|VSSADMIN|PNPUTIL|DEVCON|" +
+        @"BDEUNLOCK|BITLOCKER|MANAGE-BDE|FVENOTIFY|VERACRYPT|TRUECRYPT|DISKPART|FREEFILESYNC|" +
+        @"ROBOCOPY|TERACOPY|FASTCOPY|RUFUS|ETCHER|CCLEANER|BLEACHBIT|ERASER|PRIVAZER|DBAN|" +
+        @"IMDISK|DAEMON|WINCDEMU|OSFMOUNT|VHDATTACH",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public void ScanPrefetch()
+    {
+        string dir = Path.Combine(_windows, "Prefetch");
+        if (!Directory.Exists(dir)) { _r.Notes.Add("Prefetch 폴더 없음 또는 접근 불가"); return; }
+        string[] files;
+        try { files = Directory.GetFiles(dir, "*.pf"); }
+        catch (Exception ex) { _r.Notes.Add("Prefetch 목록 실패: " + ex.Message); return; }
+        if (files.Length == 0) { _r.Notes.Add("Prefetch .pf 파일 0건 (비활성 또는 이미 삭제됨)"); return; }
+
+        int ok = 0, fail = 0;
+        foreach (var f in files)
+        {
+            string name = Path.GetFileName(f);
+
+            // 파일명만으로 의미있는 삭제/암호화 도구
+            if (PrefetchInterest.IsMatch(name))
+                Add("PrefetchInterest", "Prefetch(도구 실행)", f, name,
+                    "삭제/암호화/마운트 도구 실행 흔적", File.GetLastWriteTime(f));
+
+            byte[] raw;
+            try { raw = File.ReadAllBytes(f); } catch { fail++; continue; }
+            byte[] data = MamDecompress(raw);
+            if (data == null) { fail++; continue; }
+            ok++;
+
+            // 내부 UTF-16LE 볼륨 경로: \VOLUME{01da...-<시리얼8hex>}\...
+            string text;
+            try { text = Encoding.Unicode.GetString(data); } catch { continue; }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Match m in Regex.Matches(text, @"\\VOLUME\{[0-9a-fA-F]{16}-([0-9a-fA-F]{8})\}(\\[^\x00]{0,80})?", RegexOptions.IgnoreCase))
+            {
+                string serialHex = m.Groups[1].Value.ToUpperInvariant();
+                string serial = serialHex.Length == 8 ? $"{serialHex[..4]}-{serialHex[4..]}" : serialHex;
+                // 시스템/데이터 볼륨 시리얼은 제외 (내장). 나머지는 외장 후보.
+                if (_internalVolSerials.Contains(serial)) continue;
+                string path = m.Groups[2].Success ? m.Groups[2].Value : "";
+                string key = serial + path;
+                if (!seen.Add(key)) continue;
+                Add("Prefetch", "Prefetch(외장 볼륨 참조)", f, name,
+                    $"VolumeSerial={serial}; Path={path}", File.GetLastWriteTime(f));
+            }
+        }
+        _r.Notes.Add($"Prefetch 파싱 성공 {ok} / 실패 {fail} / 전체 {files.Length}");
+    }
+
+    // 내장 볼륨 시리얼(C:/D: 등) 을 미리 수집해 Prefetch 외장 판별에 쓴다.
+    readonly HashSet<string> _internalVolSerials = new(StringComparer.OrdinalIgnoreCase);
+
+    public void CollectInternalVolumeSerials()
+    {
+        try
+        {
+            foreach (var d in DriveInfo.GetDrives())
+            {
+                if (!d.IsReady) continue;
+                // 고정 디스크만 내장으로 간주 (이동식/네트워크 제외)
+                if (d.DriveType != DriveType.Fixed) continue;
+                // 볼륨 시리얼은 Win32 API 로 얻는다.
+                string serial = Native.GetVolumeSerial(d.RootDirectory.FullName);
+                if (!string.IsNullOrEmpty(serial)) _internalVolSerials.Add(serial);
+            }
+        }
+        catch { }
+    }
+
+    // ── MAM(XPRESS Huffman) 압축 해제 ──
+    static byte[] MamDecompress(byte[] buf)
+    {
+        // 압축 안 된 구형 .pf (SCCA) 는 그대로 반환.
+        if (buf.Length >= 8 && buf[0] == (byte)'M' && buf[1] == (byte)'A' && buf[2] == (byte)'M' && buf[3] == 0x04)
+        {
+            uint outSize = BitConverter.ToUInt32(buf, 4);
+            if (outSize == 0 || outSize > 64 * 1024 * 1024) return null;
+            const ushort FMT = 4; // COMPRESSION_FORMAT_XPRESS_HUFF
+            uint ws = 0, frag = 0;
+            if (Native.RtlGetCompressionWorkSpaceSize(FMT, ref ws, ref frag) != 0) return null;
+            byte[] work = new byte[ws];
+            byte[] outBuf = new byte[outSize];
+            byte[] src = new byte[buf.Length - 8];
+            Array.Copy(buf, 8, src, 0, src.Length);
+            uint final = 0;
+            int st = Native.RtlDecompressBufferEx(FMT, outBuf, (uint)outBuf.Length, src, (uint)src.Length, ref final, work);
+            if (st != 0) return null;
+            byte[] result = new byte[final];
+            Array.Copy(outBuf, result, (int)final);
+            return result;
+        }
+        // 헤더가 SCCA(비압축)면 그대로.
+        if (buf.Length >= 8 && buf[4] == (byte)'S' && buf[5] == (byte)'C' && buf[6] == (byte)'C' && buf[7] == (byte)'A')
+            return buf;
+        return null;
+    }
+
     // ═══════════════ 8. 볼륨 섀도 복사본 ═══════════════
 
     public void ScanShadowCopies()
@@ -698,11 +1061,15 @@ sealed record LnkInfo(uint DriveType, uint Serial, string Label, string LocalBas
 
 static class LnkParser
 {
-    public static LnkInfo? Parse(byte[] b, Encoding ansi)
+    public static LnkInfo? Parse(byte[] b, Encoding ansi) => ParseAt(b, 0, ansi);
+
+    // base 오프셋에서 시작하는 LNK 구조를 파싱한다 (점프리스트 내부 스트림용).
+    public static LnkInfo? ParseAt(byte[] b, int baseOffset, Encoding ansi)
     {
-        if (b.Length < 0x4C || BitConverter.ToUInt32(b, 0) != 0x4C) return null;
-        uint flags = BitConverter.ToUInt32(b, 0x14);
-        int pos = 0x4C;
+        if (baseOffset < 0 || baseOffset + 0x4C > b.Length) return null;
+        if (BitConverter.ToUInt32(b, baseOffset) != 0x4C) return null;
+        uint flags = BitConverter.ToUInt32(b, baseOffset + 0x14);
+        int pos = baseOffset + 0x4C;
         if ((flags & 0x1) != 0) // HasLinkTargetIDList
         {
             if (pos + 2 > b.Length) return null;
@@ -830,6 +1197,9 @@ public static class UsbAuditor
         Step("setupapi 로그", () => a.ScanSetupApiLogs());
         Step("이벤트 로그", () => a.ScanEventLogs());
         Step("LNK 파일", () => a.ScanLnkFiles());
+        Step("점프리스트", () => a.ScanJumpLists());
+        Step("Shellbags / MRU (활동 계층)", () => a.ScanActivityForLiveUsers("Activity(live)"));
+        Step("Prefetch", () => { a.CollectInternalVolumeSerials(); a.ScanPrefetch(); });
         Step("볼륨 섀도 복사본", () => a.ScanShadowCopies());
 
         sw.Stop();

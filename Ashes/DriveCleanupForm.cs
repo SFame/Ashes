@@ -273,6 +273,9 @@ namespace Ashes
                     MountPoints2      = chkExtMountPts.Checked,
                     RegistryUsb       = chkExtRegUsb.Checked,
                     Amcache           = chkExtAmcache.Checked,
+                    JumpLists         = chkExtJumpList.Checked,
+                    Prefetch          = chkExtPrefetch.Checked,
+                    Shellbags         = chkExtShellbags.Checked,
                 };
                 await TraceCleaner.RunAsync(opt, OnOutput, _cts.Token);
             }

@@ -84,6 +84,18 @@ namespace Ashes
 
             /// <summary>Amcache.hve 의 저장장치 기록 정리.</summary>
             public bool Amcache { get; set; } = true;
+
+            /// <summary>점프리스트(AutomaticDestinations/CustomDestinations) 중
+            /// 외장 볼륨을 참조하는 파일 삭제.</summary>
+            public bool JumpLists { get; set; } = true;
+
+            /// <summary>Prefetch 전체 삭제. 외장 볼륨 참조(.pf)와 삭제 도구 실행 흔적을
+            /// 모두 제거한다. 단, 이후 프로그램 실행 시 다시 생성된다.</summary>
+            public bool Prefetch { get; set; } = true;
+
+            /// <summary>Shellbags 에서 외장 드라이브(E:/F: 등) 노드가 발견되면, 그
+            /// 노드가 속한 "내 PC" 컨테이너 하위를 초기화한다.</summary>
+            public bool Shellbags { get; set; } = true;
         }
 
         public sealed class Result
@@ -95,6 +107,9 @@ namespace Ashes
             public int MountPointsRemoved;
             public int RegistryUsbRemoved;
             public int AmcacheRemoved;
+            public int JumpListsRemoved;
+            public int PrefetchRemoved;
+            public int ShellbagsRemoved;
             public List<string> Warnings { get; } = new();
         }
 
@@ -114,7 +129,7 @@ namespace Ashes
             if (opt.EventLogs)
             {
                 Log("");
-                Log("[1/7] 이벤트 로그 정리 (채널 clear)");
+                Log("[1/10] 이벤트 로그 정리 (채널 clear)");
                 try { r.EventChannelsProcessed = await EventLogTrick.RunAsync(opt.DryRun, Log, ct); }
                 catch (Exception ex) { r.Warnings.Add("EventLogs: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
@@ -122,7 +137,7 @@ namespace Ashes
             if (opt.SetupApi)
             {
                 Log("");
-                Log("[2/7] setupapi 로그 편집");
+                Log("[2/10] setupapi 로그 편집");
                 try { r.SetupApiSectionsRemoved = SetupApiEditor.Run(opt.DryRun, Log); }
                 catch (Exception ex) { r.Warnings.Add("SetupApi: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
@@ -130,7 +145,7 @@ namespace Ashes
             if (opt.ConnectedDevices)
             {
                 Log("");
-                Log("[3/7] 연결된 USB 저장장치 강제 제거 (pnputil)");
+                Log("[3/10] 연결된 USB 저장장치 강제 제거 (pnputil)");
                 try { r.DevicesRemoved = await ConnectedDeviceRemover.RunAsync(opt.DryRun, Log, ct); }
                 catch (Exception ex) { r.Warnings.Add("ConnectedDevices: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
@@ -138,7 +153,7 @@ namespace Ashes
             if (opt.VolumeInfoCache)
             {
                 Log("");
-                Log("[4/7] Windows Search VolumeInfoCache 정리");
+                Log("[4/10] Windows Search VolumeInfoCache 정리");
                 try { r.VolumeCacheEntriesRemoved = VolumeCacheCleaner.Run(opt.DryRun, Log); }
                 catch (Exception ex) { r.Warnings.Add("VolumeInfoCache: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
@@ -146,7 +161,7 @@ namespace Ashes
             if (opt.MountPoints2)
             {
                 Log("");
-                Log("[5/7] MountPoints2 잔여 GUID 정리");
+                Log("[5/10] MountPoints2 잔여 GUID 정리");
                 try { r.MountPointsRemoved = MountPointsCleaner.Run(opt.DryRun, Log); }
                 catch (Exception ex) { r.Warnings.Add("MountPoints2: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
@@ -154,7 +169,7 @@ namespace Ashes
             if (opt.RegistryUsb)
             {
                 Log("");
-                Log("[6/7] Enum\\USB / DeviceContainers 저장장치 잔여 노드 정리");
+                Log("[6/10] Enum\\USB / DeviceContainers 저장장치 잔여 노드 정리");
                 try { r.RegistryUsbRemoved = RegistryUsbCleaner.Run(opt.DryRun, Log); }
                 catch (Exception ex) { r.Warnings.Add("RegistryUsb: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
@@ -162,9 +177,33 @@ namespace Ashes
             if (opt.Amcache)
             {
                 Log("");
-                Log("[7/7] Amcache 저장장치 기록 정리");
+                Log("[7/10] Amcache 저장장치 기록 정리");
                 try { r.AmcacheRemoved = AmcacheCleaner.Run(opt.DryRun, Log); }
                 catch (Exception ex) { r.Warnings.Add("Amcache: " + ex.Message); Log("   [실패] " + ex.Message); }
+            }
+
+            if (opt.JumpLists)
+            {
+                Log("");
+                Log("[8/10] 점프리스트 외장 볼륨 참조 파일 삭제");
+                try { r.JumpListsRemoved = JumpListCleaner.Run(opt.DryRun, Log); }
+                catch (Exception ex) { r.Warnings.Add("JumpLists: " + ex.Message); Log("   [실패] " + ex.Message); }
+            }
+
+            if (opt.Prefetch)
+            {
+                Log("");
+                Log("[9/10] Prefetch 전체 삭제");
+                try { r.PrefetchRemoved = PrefetchCleaner.Run(opt.DryRun, Log); }
+                catch (Exception ex) { r.Warnings.Add("Prefetch: " + ex.Message); Log("   [실패] " + ex.Message); }
+            }
+
+            if (opt.Shellbags)
+            {
+                Log("");
+                Log("[10/10] Shellbags 외장 드라이브 컨테이너 초기화");
+                try { r.ShellbagsRemoved = ShellbagsCleaner.Run(opt.DryRun, Log); }
+                catch (Exception ex) { r.Warnings.Add("Shellbags: " + ex.Message); Log("   [실패] " + ex.Message); }
             }
 
             Log("");
@@ -172,7 +211,8 @@ namespace Ashes
             Log($"   이벤트 채널 {r.EventChannelsProcessed}개, setupapi 섹션 {r.SetupApiSectionsRemoved}개,"
                 + $" 장치 {r.DevicesRemoved}개, VolumeInfoCache {r.VolumeCacheEntriesRemoved}개,"
                 + $" MountPoints2 {r.MountPointsRemoved}개, Enum\\USB {r.RegistryUsbRemoved}개,"
-                + $" Amcache {r.AmcacheRemoved}개");
+                + $" Amcache {r.AmcacheRemoved}개, 점프리스트 {r.JumpListsRemoved}개,"
+                + $" Prefetch {r.PrefetchRemoved}개, Shellbags {r.ShellbagsRemoved}개");
             if (r.Warnings.Count > 0)
             {
                 Log("   경고:");
@@ -286,6 +326,21 @@ namespace Ashes
                 @"USB\\VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+            // UASP 외장 인클로저는 USB 가 아니라 SCSI\DISK&VEN_...&PROD_... 로 열거된다.
+            // (조사 결과: 외장 SSD 들이 SCSI\DISK 로 남음.) setupapi 의 "Delete Device"
+            // 섹션에 SCSI\DISK 헤더가 있으면 그건 제거된 적 있는 디스크이므로 외장으로
+            // 본다. 내장 시스템 디스크는 제거되지 않아 Delete Device 로 안 남는다.
+            // 그래도 안전을 위해 내장 컨트롤러 벤더(NVMe 등)는 명시적으로 제외한다.
+            static readonly Regex ScsiDisk = new(
+                @"SCSI\\DISK&VEN_([^&]*)&PROD_",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            static readonly Regex ScsiInternalVendor = new(
+                @"VEN_(NVME|SAMSUNG|INTEL|WDC|SK_?HYNIX|MICRON|KIOXIA|SEAGATE|TOSHIBA)\b",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            static readonly Regex DeleteDeviceHeader = new(
+                @"^>>>\s+\[Delete Device",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
             public static int Run(bool dryRun, Action<string> log)
             {
                 string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
@@ -352,6 +407,16 @@ namespace Ashes
                 return StorageSerialHeuristic.LooksLikeStorageSerial(line);
             }
 
+            // SCSI\DISK 외장(UASP) 인클로저의 Delete Device 헤더인지.
+            // 내장 시스템 디스크(NVMe/Samsung 등)는 제외한다.
+            static bool IsExternalScsiDelete(string headerLine)
+            {
+                if (!DeleteDeviceHeader.IsMatch(headerLine)) return false;
+                if (!ScsiDisk.IsMatch(headerLine)) return false;
+                if (ScsiInternalVendor.IsMatch(headerLine)) return false; // 내장 디스크 제외
+                return true;
+            }
+
             static int ProcessFile(string path, HashSet<string> storageVidPid, bool dryRun, Action<string> log)
             {
                 string[] lines;
@@ -396,9 +461,10 @@ namespace Ashes
                     // 헤더에 명확한 저장장치 문자열(USBSTOR 등)이 있으면 대상.
                     // 그렇지 않아도, 헤더가 USB 상위 노드(USB\VID_...)이고 그 VID/PID 가
                     // 1패스에서 저장장치로 확인된 것이면 대상. 본문에 USBSTOR 계열이
-                    // 인용된 경우도 대상.
+                    // 인용된 경우도 대상. 그리고 SCSI\DISK 외장(UASP) Delete Device 도 대상.
                     bool hitInHeader = Target.IsMatch(lines[start])
-                        || (UsbNode.IsMatch(lines[start]) && MatchesStorageVidPid(lines[start], storageVidPid));
+                        || (UsbNode.IsMatch(lines[start]) && MatchesStorageVidPid(lines[start], storageVidPid))
+                        || IsExternalScsiDelete(lines[start]);
                     bool hitInBody = false;
                     if (!hitInHeader)
                     {
@@ -1256,6 +1322,323 @@ namespace Ashes
                 if (string.IsNullOrEmpty(s)) return false;
                 var m = Regex.Match(s, @"VID_([0-9A-Fa-f]{4})&PID_([0-9A-Fa-f]{4})", RegexOptions.IgnoreCase);
                 return m.Success && storage.Contains($"{m.Groups[1].Value}:{m.Groups[2].Value}".ToUpperInvariant());
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // 8) 점프리스트: 외장 볼륨을 참조하는 파일을 통째로 삭제
+        //    AutomaticDestinations / CustomDestinations 안의 LNK 스트림을 파싱해,
+        //    외장 볼륨(REMOVABLE, 또는 시스템 드라이브 외 드라이브 문자) 참조가
+        //    하나라도 있으면 그 점프리스트 파일 전체를 삭제한다.
+        //    (선택적 스트림 제거는 DestList 재작성이 필요해 파일 손상 위험이 크므로,
+        //     통째 삭제 방식을 택함. 삭제된 파일은 Windows 가 다시 생성한다.)
+        // ═══════════════════════════════════════════════════════════════════
+
+        static class JumpListCleaner
+        {
+            // LNK 헤더 시그니처(=CLSID). 점프리스트 내부 스트림은 이걸로 시작한다.
+            static readonly byte[] LnkClsid =
+            {
+                0x4C,0x00,0x00,0x00,0x01,0x14,0x02,0x00,0x00,0x00,0x00,0x00,
+                0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46
+            };
+
+            public static int Run(bool dryRun, Action<string> log)
+            {
+                string sysDrive = (Environment.GetEnvironmentVariable("SystemDrive") ?? "C:").TrimEnd('\\').ToUpperInvariant();
+                string usersDir = Path.Combine(sysDrive + "\\", "Users");
+                if (!Directory.Exists(usersDir)) { log("   · Users 폴더 없음"); return 0; }
+
+                int deleted = 0;
+                foreach (var userDir in Directory.EnumerateDirectories(usersDir))
+                {
+                    foreach (var sub in new[] { "AutomaticDestinations", "CustomDestinations" })
+                    {
+                        string dir = Path.Combine(userDir, @"AppData\Roaming\Microsoft\Windows\Recent", sub);
+                        if (!Directory.Exists(dir)) continue;
+
+                        string pattern = sub == "AutomaticDestinations"
+                            ? "*.automaticDestinations-ms" : "*.customDestinations-ms";
+                        IEnumerable<string> files;
+                        try { files = Directory.EnumerateFiles(dir, pattern); } catch { continue; }
+
+                        foreach (var file in files)
+                        {
+                            byte[] data;
+                            try { data = File.ReadAllBytes(file); } catch { continue; }
+
+                            if (!ReferencesExternalVolume(data, sysDrive)) continue;
+
+                            string user = Path.GetFileName(userDir);
+                            log($"   · [{user}] {sub}\\{Path.GetFileName(file)}");
+                            if (dryRun) { deleted++; continue; }
+
+                            try
+                            {
+                                var attrs = File.GetAttributes(file);
+                                if ((attrs & FileAttributes.ReadOnly) != 0)
+                                    File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);
+                                File.Delete(file);
+                                deleted++;
+                            }
+                            catch (Exception ex) { log($"       삭제 실패: {ex.Message}"); }
+                        }
+                    }
+                }
+                if (deleted == 0) log("   · 외장 볼륨 참조 점프리스트 없음");
+                return deleted;
+            }
+
+            // 파일 바이트에서 LNK 스트림을 카빙해, 외장 볼륨 참조가 있는지 검사.
+            static bool ReferencesExternalVolume(byte[] buf, string sysDrive)
+            {
+                int off = 0;
+                while (true)
+                {
+                    int idx = IndexOf(buf, LnkClsid, off);
+                    if (idx < 0) break;
+                    off = idx + 4;
+                    if (StreamHasExternalVolume(buf, idx, sysDrive)) return true;
+                }
+                return false;
+            }
+
+            // 하나의 LNK 스트림(idx 시작)에서 VolumeID/LocalBasePath 를 읽어 외장인지 판정.
+            static bool StreamHasExternalVolume(byte[] buf, int start, string sysDrive)
+            {
+                try
+                {
+                    if (start + 76 > buf.Length) return false;
+                    uint flags = BitConverter.ToUInt32(buf, start + 20);
+                    int pos = start + 76;
+
+                    // HasLinkTargetIDList
+                    if ((flags & 0x01) != 0)
+                    {
+                        if (pos + 2 > buf.Length) return false;
+                        ushort idsize = BitConverter.ToUInt16(buf, pos);
+                        pos += 2 + idsize;
+                    }
+
+                    // HasLinkInfo
+                    if ((flags & 0x02) == 0) return false;
+                    if (pos + 28 > buf.Length) return false;
+                    int liStart = pos;
+                    uint liSize = BitConverter.ToUInt32(buf, liStart);
+                    if (liStart + liSize > buf.Length || liSize < 28) return false;
+
+                    uint liFlags = BitConverter.ToUInt32(buf, liStart + 8);
+                    uint volOff = BitConverter.ToUInt32(buf, liStart + 12);
+                    uint lbpOff = BitConverter.ToUInt32(buf, liStart + 16);
+
+                    // VolumeIDAndLocalBasePath
+                    if ((liFlags & 0x01) != 0 && volOff != 0 && liStart + volOff + 8 <= buf.Length)
+                    {
+                        uint driveType = BitConverter.ToUInt32(buf, (int)(liStart + volOff + 4));
+                        // DRIVE_REMOVABLE = 2 → 외장 이동식.
+                        if (driveType == 2) return true;
+                    }
+
+                    // LocalBasePath: 시스템 드라이브 외 드라이브 문자로 시작하면 외장으로 간주.
+                    if (lbpOff != 0 && liStart + lbpOff < buf.Length)
+                    {
+                        int p = (int)(liStart + lbpOff);
+                        int end = p;
+                        while (end < buf.Length && buf[end] != 0) end++;
+                        string path = Encoding.Latin1.GetString(buf, p, end - p);
+                        if (path.Length >= 2 && path[1] == ':')
+                        {
+                            string drv = path.Substring(0, 2).ToUpperInvariant();
+                            if (drv != sysDrive) return true;
+                        }
+                    }
+                }
+                catch { }
+                return false;
+            }
+
+            static int IndexOf(byte[] hay, byte[] needle, int start)
+            {
+                int last = hay.Length - needle.Length;
+                for (int i = Math.Max(0, start); i <= last; i++)
+                {
+                    int j = 0;
+                    while (j < needle.Length && hay[i + j] == needle[j]) j++;
+                    if (j == needle.Length) return i;
+                }
+                return -1;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // 9) Prefetch 전체 삭제
+        //    외장 볼륨 참조(.pf)와 삭제 도구 실행 흔적을 모두 제거한다.
+        //    선택 삭제가 아니라 전체 삭제인 이유: 조사에서 우리를 특정한 결정적
+        //    증거가 외장 게임 실행이 아니라 "삭제 도구(DriveCleanup/sdelete/wevtutil…)
+        //    실행 흔적"이었기 때문. 외장 참조 .pf 만 지우면 도구 흔적이 남는다.
+        //    주의: Prefetch 는 시스템 기능이라 이후 프로그램 실행 시 다시 생성된다.
+        //    (완전 차단은 서비스 비활성화가 필요하나, 그 자체가 특이 상태가 되므로
+        //     여기서는 하지 않는다.)
+        // ═══════════════════════════════════════════════════════════════════
+
+        static class PrefetchCleaner
+        {
+            public static int Run(bool dryRun, Action<string> log)
+            {
+                string win = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string dir = Path.Combine(win, "Prefetch");
+                if (!Directory.Exists(dir)) { log("   · Prefetch 폴더 없음"); return 0; }
+
+                string[] files;
+                try { files = Directory.GetFiles(dir, "*.pf"); }
+                catch (Exception ex) { log($"   · Prefetch 목록 실패: {ex.Message}"); return 0; }
+
+                if (files.Length == 0) { log("   · Prefetch .pf 파일 없음 (이미 비었거나 비활성)"); return 0; }
+
+                log($"   · Prefetch {files.Length}개 .pf 삭제 예정");
+                if (dryRun) return files.Length;
+
+                int deleted = 0;
+                foreach (var f in files)
+                {
+                    try
+                    {
+                        var attrs = File.GetAttributes(f);
+                        if ((attrs & FileAttributes.ReadOnly) != 0)
+                            File.SetAttributes(f, attrs & ~FileAttributes.ReadOnly);
+                        File.Delete(f);
+                        deleted++;
+                    }
+                    catch { /* 사용 중이거나 권한 문제인 개별 파일은 건너뜀 */ }
+                }
+                log($"   · {deleted}/{files.Length}개 삭제 완료"
+                    + (deleted < files.Length ? " (일부는 사용 중/권한으로 실패)" : ""));
+                return deleted;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // 10) Shellbags: 외장 드라이브 노드가 있는 "내 PC" 컨테이너 하위 초기화 (옵션 B)
+        //     BagMRU 트리를 순회해, 어떤 노드의 shell item 이 외장 드라이브
+        //     (시스템·데이터 드라이브 외의 문자)면, 그 노드의 부모(내 PC 컨테이너)
+        //     하위를 통째로 비운다. C:/D: 폴더 보기설정도 함께 초기화되지만
+        //     외장 폴더 트리(Game\SOMISOFT\NC 등)가 확실히 사라진다.
+        //     UsrClass 와 NTUSER 양쪽 하이브를 처리한다.
+        // ═══════════════════════════════════════════════════════════════════
+
+        static class ShellbagsCleaner
+        {
+            public static int Run(bool dryRun, Action<string> log)
+            {
+                string sysDrive = (Environment.GetEnvironmentVariable("SystemDrive") ?? "C:").TrimEnd('\\').ToUpperInvariant();
+                int total = 0;
+
+                // 라이브 로그인 사용자: HKU\<sid> (NTUSER) + HKU\<sid>_Classes (UsrClass)
+                using (var hku = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64))
+                {
+                    foreach (var sid in SubKeys(hku))
+                    {
+                        if (!sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        // NTUSER 측
+                        total += CleanHive(hku, $@"{sid}\Software\Microsoft\Windows\Shell\BagMRU",
+                                           $"HKU\\{sid} (NTUSER)", sysDrive, dryRun, log);
+                        // UsrClass 측
+                        total += CleanHive(hku, $@"{sid}_Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU",
+                                           $"HKU\\{sid}_Classes (UsrClass)", sysDrive, dryRun, log);
+                    }
+                }
+                if (total == 0) log("   · 외장 드라이브 Shellbag 없음");
+                return total;
+            }
+
+            // BagMRU 루트에서 외장 드라이브 노드를 찾아, 그 부모 컨테이너 하위를 비운다.
+            static int CleanHive(RegistryKey baseKey, string bagMruPath, string label,
+                                 string sysDrive, bool dryRun, Action<string> log)
+            {
+                using var root = Open(baseKey, bagMruPath, writable: false);
+                if (root == null) return 0;
+
+                // 외장 드라이브 노드를 가진 "부모 컨테이너"들을 수집.
+                var containers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                FindExternalContainers(root, "", sysDrive, containers);
+                if (containers.Count == 0) return 0;
+
+                int cleaned = 0;
+                foreach (var rel in containers)
+                {
+                    string containerPath = string.IsNullOrEmpty(rel) ? bagMruPath : bagMruPath + "\\" + rel;
+                    log($"   · [{label}] BagMRU\\{rel} 하위 초기화");
+                    if (dryRun) { cleaned++; continue; }
+
+                    try
+                    {
+                        using var container = Open(baseKey, containerPath, writable: true);
+                        if (container == null) continue;
+                        // 컨테이너 하위 서브키(드라이브/폴더 노드) 전부 삭제.
+                        foreach (var sub in SubKeys(container).ToList())
+                        {
+                            try { container.DeleteSubKeyTree(sub, throwOnMissingSubKey: false); } catch { }
+                        }
+                        // MRUListEx 를 비워, 남은 값 인덱스 참조를 끊는다.
+                        try { container.SetValue("MRUListEx", new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, RegistryValueKind.Binary); } catch { }
+                        // 드라이브 항목 값(0,1,2,3…)도 제거.
+                        foreach (var vn in container.GetValueNames().ToList())
+                        {
+                            if (int.TryParse(vn, out _))
+                                try { container.DeleteValue(vn, false); } catch { }
+                        }
+                        cleaned++;
+                    }
+                    catch (Exception ex) { log($"       실패: {ex.Message}"); }
+                }
+                return cleaned;
+            }
+
+            // 재귀로 BagMRU 트리를 돌며, shell item 이 외장 드라이브인 노드를 만나면
+            // 그 "부모 경로"를 컨테이너로 기록한다.
+            static void FindExternalContainers(RegistryKey node, string rel, string sysDrive,
+                                               HashSet<string> containers)
+            {
+                foreach (var valName in ValueNames(node))
+                {
+                    if (!int.TryParse(valName, out _)) continue;
+                    if (node.GetValue(valName) is not byte[] b) continue;
+                    if (b.Length >= 3 && (b[2] & 0x70) == 0x20) // volume/drive shell item
+                    {
+                        string txt = Encoding.Latin1.GetString(b, 3, Math.Min(23, b.Length - 3));
+                        int z = txt.IndexOf('\0'); if (z >= 0) txt = txt[..z];
+                        if (txt.Length >= 2 && txt[1] == ':')
+                        {
+                            string drv = txt[..2].ToUpperInvariant();
+                            if (drv != sysDrive && drv != "D:")
+                            {
+                                // 이 드라이브 노드가 속한 컨테이너 = 현재 rel (부모)
+                                containers.Add(rel);
+                            }
+                        }
+                    }
+                }
+                foreach (var sub in SubKeys(node))
+                {
+                    using var sk = Open(node, sub, writable: false);
+                    if (sk != null)
+                        FindExternalContainers(sk, string.IsNullOrEmpty(rel) ? sub : rel + "\\" + sub, sysDrive, containers);
+                }
+            }
+
+            static RegistryKey Open(RegistryKey root, string path, bool writable)
+            {
+                try { return root.OpenSubKey(path, writable); } catch { return null; }
+            }
+            static IEnumerable<string> SubKeys(RegistryKey k)
+            {
+                try { return k.GetSubKeyNames(); } catch { return Array.Empty<string>(); }
+            }
+            static IEnumerable<string> ValueNames(RegistryKey k)
+            {
+                try { return k.GetValueNames(); } catch { return Array.Empty<string>(); }
             }
         }
 
